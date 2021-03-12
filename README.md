@@ -15,7 +15,7 @@
 **unet并不适合VOC此类数据集，其更适合特征少，需要浅层特征的医药数据集之类的。**
 | 训练数据集 | 权值文件名称 | 测试数据集 | 输入图片大小 | mIOU | 
 | :-----: | :-----: | :------: | :------: | :------: | 
-| VOC12+SBD | [unet_voc.h5](https://github.com/bubbliiiing/unet-pytorch/releases/download/v1.0/unet_voc.pth) | VOC-Val12 | 512x512| 55.11 | 
+| VOC12+SBD | [unet_voc.pth](https://github.com/bubbliiiing/unet-pytorch/releases/download/v1.0/unet_voc.pth) | VOC-Val12 | 512x512| 55.11 | 
 
 ## 所需环境
 torch==1.2.0    
