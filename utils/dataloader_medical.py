@@ -1,15 +1,11 @@
+import os
 from random import shuffle
-import numpy as np
-import torch
-import torch.nn as nn
-import math
-import torch.nn.functional as F
-from PIL import Image
-from torch.autograd import Variable
-from torch.utils.data import DataLoader
-from torch.utils.data.dataset import Dataset
-from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
+
 import cv2
+import numpy as np
+from PIL import Image
+from torch.utils.data.dataset import Dataset
+
 
 def letterbox_image(image, label , size):
     label = Image.fromarray(np.array(label))
@@ -34,14 +30,15 @@ def rand(a=0, b=1):
     return np.random.rand()*(b-a) + a
 
 class DeeplabDataset(Dataset):
-    def __init__(self,train_lines,image_size,num_classes,random_data):
+    def __init__(self,train_lines,image_size,num_classes,random_data,dataset_path):
         super(DeeplabDataset, self).__init__()
 
-        self.train_lines = train_lines
-        self.train_batches = len(train_lines)
-        self.image_size = image_size
-        self.num_classes = num_classes
-        self.random_data = random_data
+        self.train_lines    = train_lines
+        self.train_batches  = len(train_lines)
+        self.image_size     = image_size
+        self.num_classes    = num_classes
+        self.random_data    = random_data
+        self.dataset_path   = dataset_path
 
     def __len__(self):
         return self.train_batches
@@ -109,8 +106,8 @@ class DeeplabDataset(Dataset):
         annotation_line = self.train_lines[index]
         name = annotation_line.split()[0]
         # 从文件中读取图像
-        jpg = Image.open(r"./Medical_Datasets/Images" + '/' + name + ".png")
-        png = Image.open(r"./Medical_Datasets/Labels" + '/' + name + ".png")
+        jpg = Image.open(os.path.join(os.path.join(self.dataset_path, "Images"), name + ".png"))
+        png = Image.open(os.path.join(os.path.join(self.dataset_path, "Labels"), name + ".png"))
 
         if self.random_data:
             jpg, png = self.get_random_data(jpg,png,(int(self.image_size[1]),int(self.image_size[0])))

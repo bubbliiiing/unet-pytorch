@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torchsummary import summary
 from nets.vgg import VGG16
 
 
@@ -13,7 +11,6 @@ class unetUp(nn.Module):
         self.up = nn.UpsamplingBilinear2d(scale_factor=2)
 
     def forward(self, inputs1, inputs2):
-
         outputs = torch.cat([inputs1, self.up(inputs2)], 1)
         outputs = self.conv1(outputs)
         outputs = self.conv2(outputs)

@@ -1,13 +1,9 @@
-import colorsys
-import copy
 import os
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
-from torch import nn
-from torch.autograd import Variable
 from tqdm import tqdm
 
 from unet import Unet
@@ -23,7 +19,7 @@ class miou_Unet(Unet):
         images = np.transpose(images,(0,3,1,2))
 
         with torch.no_grad():
-            images = Variable(torch.from_numpy(images).type(torch.FloatTensor))
+            images = torch.from_numpy(images).type(torch.FloatTensor)
             if self.cuda:
                 images =images.cuda()
 

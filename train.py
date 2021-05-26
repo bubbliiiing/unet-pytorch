@@ -1,19 +1,15 @@
+import os
 import time
 
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
-import torchvision.models as models
-from PIL import Image
-from torch import nn
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
-from torchvision import models
 from tqdm import tqdm
 
 from nets.unet import Unet
-from nets.unet_training import CE_Loss, Dice_loss
+from nets.unet_training import CE_Loss, Dice_loss, LossHistory
 from utils.dataloader import DeeplabDataset, deeplab_dataset_collate
 from utils.metrics import f_score
 
@@ -37,9 +33,9 @@ def fit_one_epoch(net,epoch,epoch_size,epoch_size_val,gen,genval,Epoch,cuda):
             imgs, pngs, labels = batch
 
             with torch.no_grad():
-                imgs = Variable(torch.from_numpy(imgs).type(torch.FloatTensor))
-                pngs = Variable(torch.from_numpy(pngs).type(torch.FloatTensor)).long()
-                labels = Variable(torch.from_numpy(labels).type(torch.FloatTensor))
+                imgs = torch.from_numpy(imgs).type(torch.FloatTensor)
+                pngs = torch.from_numpy(pngs).type(torch.FloatTensor).long()
+                labels = torch.from_numpy(labels).type(torch.FloatTensor)
                 if cuda:
                     imgs = imgs.cuda()
                     pngs = pngs.cuda()
@@ -80,9 +76,9 @@ def fit_one_epoch(net,epoch,epoch_size,epoch_size_val,gen,genval,Epoch,cuda):
                 break
             imgs, pngs, labels = batch
             with torch.no_grad():
-                imgs = Variable(torch.from_numpy(imgs).type(torch.FloatTensor))
-                pngs = Variable(torch.from_numpy(pngs).type(torch.FloatTensor)).long()
-                labels = Variable(torch.from_numpy(labels).type(torch.FloatTensor))
+                imgs = torch.from_numpy(imgs).type(torch.FloatTensor)
+                pngs = torch.from_numpy(pngs).type(torch.FloatTensor).long()
+                labels = torch.from_numpy(labels).type(torch.FloatTensor)
                 if cuda:
                     imgs = imgs.cuda()
                     pngs = pngs.cuda()
@@ -107,13 +103,13 @@ def fit_one_epoch(net,epoch,epoch_size,epoch_size_val,gen,genval,Epoch,cuda):
                                 'lr'        : get_lr(optimizer)})
             pbar.update(1)
             
+    loss_history.append_loss(total_loss/(epoch_size+1), val_loss/(epoch_size_val+1))
     print('Finish Validation')
     print('Epoch:'+ str(epoch+1) + '/' + str(Epoch))
     print('Total Loss: %.4f || Val Loss: %.4f ' % (total_loss/(epoch_size+1),val_toal_loss/(epoch_size_val+1)))
 
     print('Saving state, iter:', str(epoch+1))
     torch.save(model.state_dict(), 'logs/Epoch%d-Total_Loss%.4f-Val_Loss%.4f.pth'%((epoch+1),total_loss/(epoch_size+1),val_toal_loss/(epoch_size_val+1)))
-
 
 
 if __name__ == "__main__":
@@ -142,9 +138,14 @@ if __name__ == "__main__":
     #   Cuda的使用
     #-------------------------------#
     Cuda = True
+    #------------------------------#
+    #   数据集路径
+    #------------------------------#
+    dataset_path = "VOCdevkit/VOC2007/"
 
     model = Unet(num_classes=NUM_CLASSES, in_channels=inputs_size[-1], pretrained=pretrained).train()
     
+    loss_history = LossHistory("logs/")
     #-------------------------------------------#
     #   权值文件的下载请看README
     #   权值和主干特征提取网络一定要对应
@@ -165,13 +166,13 @@ if __name__ == "__main__":
         net = net.cuda()
 
     # 打开数据集的txt
-    with open(r"VOCdevkit/VOC2007/ImageSets/Segmentation/train.txt","r") as f:
+    with open(os.path.join(dataset_path, "ImageSets/Segmentation/train.txt"),"r") as f:
         train_lines = f.readlines()
 
     # 打开数据集的txt
-    with open(r"VOCdevkit/VOC2007/ImageSets/Segmentation/val.txt","r") as f:
+    with open(os.path.join(dataset_path, "ImageSets/Segmentation/val.txt"),"r") as f:
         val_lines = f.readlines()
-        
+
     #------------------------------------------------------#
     #   主干特征提取网络特征通用，冻结训练可以加快训练速度
     #   也可以在训练初期防止权值被破坏。
@@ -181,23 +182,26 @@ if __name__ == "__main__":
     #   提示OOM或者显存不足请调小Batch_size
     #------------------------------------------------------#
     if True:
-        lr = 1e-4
-        Init_Epoch = 0
-        Interval_Epoch = 50
-        Batch_size = 2
+        lr              = 1e-4
+        Init_Epoch      = 0
+        Interval_Epoch  = 50
+        Batch_size      = 2
         
-        optimizer = optim.Adam(model.parameters(),lr)
-        lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
+        optimizer       = optim.Adam(model.parameters(),lr)
+        lr_scheduler    = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
 
-        train_dataset = DeeplabDataset(train_lines, inputs_size, NUM_CLASSES, True)
-        val_dataset = DeeplabDataset(val_lines, inputs_size, NUM_CLASSES, False)
-        gen = DataLoader(train_dataset, batch_size=Batch_size, num_workers=2, pin_memory=True,
+        train_dataset   = DeeplabDataset(train_lines, inputs_size, NUM_CLASSES, True, dataset_path)
+        val_dataset     = DeeplabDataset(val_lines, inputs_size, NUM_CLASSES, False, dataset_path)
+        gen             = DataLoader(train_dataset, batch_size=Batch_size, num_workers=4, pin_memory=True,
                                 drop_last=True, collate_fn=deeplab_dataset_collate)
-        gen_val = DataLoader(val_dataset, batch_size=Batch_size, num_workers=2,pin_memory=True, 
+        gen_val         = DataLoader(val_dataset, batch_size=Batch_size, num_workers=4,pin_memory=True, 
                                 drop_last=True, collate_fn=deeplab_dataset_collate)
 
-        epoch_size      = max(1, len(train_lines)//Batch_size)
-        epoch_size_val  = max(1, len(val_lines)//Batch_size)
+        epoch_size      = len(train_lines) // Batch_size
+        epoch_size_val  = len(val_lines) // Batch_size
+
+        if epoch_size == 0 or epoch_size_val == 0:
+            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
 
         for param in model.vgg.parameters():
             param.requires_grad = False
@@ -207,23 +211,26 @@ if __name__ == "__main__":
             lr_scheduler.step()
     
     if True:
-        lr = 1e-5
-        Interval_Epoch = 50
-        Epoch = 100
-        Batch_size = 2
+        lr              = 1e-5
+        Interval_Epoch  = 50
+        Epoch           = 100
+        Batch_size      = 2
 
-        optimizer = optim.Adam(model.parameters(),lr)
-        lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
+        optimizer       = optim.Adam(model.parameters(),lr)
+        lr_scheduler    = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
 
-        train_dataset = DeeplabDataset(train_lines, inputs_size, NUM_CLASSES, True)
-        val_dataset = DeeplabDataset(val_lines, inputs_size, NUM_CLASSES, False)
-        gen = DataLoader(train_dataset, batch_size=Batch_size, num_workers=4, pin_memory=True,
+        train_dataset   = DeeplabDataset(train_lines, inputs_size, NUM_CLASSES, True, dataset_path)
+        val_dataset     = DeeplabDataset(val_lines, inputs_size, NUM_CLASSES, False, dataset_path)
+        gen             = DataLoader(train_dataset, batch_size=Batch_size, num_workers=4, pin_memory=True,
                                 drop_last=True, collate_fn=deeplab_dataset_collate)
-        gen_val = DataLoader(val_dataset, batch_size=Batch_size, num_workers=4,pin_memory=True, 
+        gen_val         = DataLoader(val_dataset, batch_size=Batch_size, num_workers=4,pin_memory=True, 
                                 drop_last=True, collate_fn=deeplab_dataset_collate)
 
-        epoch_size      = max(1, len(train_lines)//Batch_size)
-        epoch_size_val  = max(1, len(val_lines)//Batch_size)
+        epoch_size      = len(train_lines) // Batch_size
+        epoch_size_val  = len(val_lines) // Batch_size
+
+        if epoch_size == 0 or epoch_size_val == 0:
+            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
 
         for param in model.vgg.parameters():
             param.requires_grad = True

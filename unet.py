@@ -1,13 +1,12 @@
 import colorsys
 import copy
-import os
+import time
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
 from torch import nn
-from torch.autograd import Variable
 
 from nets.unet import Unet as unet
 
@@ -42,7 +41,6 @@ class Unet(object):
     #   获得所有的分类
     #---------------------------------------------------#
     def generate(self):
-        os.environ["CUDA_VISIBLE_DEVICES"] = '0'
         self.net = unet(num_classes=self.num_classes, in_channels=self.model_image_size[-1]).eval()
 
         state_dict = torch.load(self.model_path)
@@ -54,9 +52,7 @@ class Unet(object):
 
         print('{} model loaded.'.format(self.model_path))
 
-        if self.num_classes == 2:
-            self.colors = [(255, 255, 255),  (0, 0, 0)]
-        elif self.num_classes <= 21:
+        if self.num_classes <= 21:
             self.colors = [(0, 0, 0), (128, 0, 0), (0, 128, 0), (128, 128, 0), (0, 0, 128), (128, 0, 128), (0, 128, 128), 
                     (128, 128, 128), (64, 0, 0), (192, 0, 0), (64, 128, 0), (192, 128, 0), (64, 0, 128), (192, 0, 128), 
                     (64, 128, 128), (192, 128, 128), (0, 64, 0), (128, 64, 0), (0, 192, 0), (128, 192, 0), (0, 64, 128), (128, 64, 12)]
@@ -85,35 +81,87 @@ class Unet(object):
     #   检测图片
     #---------------------------------------------------#
     def detect_image(self, image):
-        # 进行原始图片的备份
+        #---------------------------------------------------------#
+        #   在这里将图像转换成RGB图像，防止灰度图在预测时报错。
+        #---------------------------------------------------------#
+        image = image.convert('RGB')
+        
+        #---------------------------------------------------#
+        #   对输入图像进行一个备份，后面用于绘图
+        #---------------------------------------------------#
         old_img = copy.deepcopy(image)
-
         orininal_h = np.array(image).shape[0]
         orininal_w = np.array(image).shape[1]
 
+        #---------------------------------------------------#
+        #   进行不失真的resize，添加灰条，进行图像归一化
+        #---------------------------------------------------#
         image, nw, nh = self.letterbox_image(image,(self.model_image_size[1],self.model_image_size[0]))
-
         images = [np.array(image)/255]
         images = np.transpose(images,(0,3,1,2))
 
+        #---------------------------------------------------#
+        #   图片传入网络进行预测
+        #---------------------------------------------------#
         with torch.no_grad():
-            images = Variable(torch.from_numpy(images).type(torch.FloatTensor))
+            images = torch.from_numpy(images).type(torch.FloatTensor)
             if self.cuda:
                 images =images.cuda()
 
             pr = self.net(images)[0]
+            #---------------------------------------------------#
+            #   取出每一个像素点的种类
+            #---------------------------------------------------#
             pr = F.softmax(pr.permute(1,2,0),dim = -1).cpu().numpy().argmax(axis=-1)
+            #--------------------------------------#
+            #   将灰条部分截取掉
+            #--------------------------------------#
             pr = pr[int((self.model_image_size[0]-nh)//2):int((self.model_image_size[0]-nh)//2+nh), int((self.model_image_size[1]-nw)//2):int((self.model_image_size[1]-nw)//2+nw)]
 
+        #------------------------------------------------#
+        #   创建一副新图，并根据每个像素点的种类赋予颜色
+        #------------------------------------------------#
         seg_img = np.zeros((np.shape(pr)[0],np.shape(pr)[1],3))
         for c in range(self.num_classes):
             seg_img[:,:,0] += ((pr[:,: ] == c )*( self.colors[c][0] )).astype('uint8')
             seg_img[:,:,1] += ((pr[:,: ] == c )*( self.colors[c][1] )).astype('uint8')
             seg_img[:,:,2] += ((pr[:,: ] == c )*( self.colors[c][2] )).astype('uint8')
 
+        #------------------------------------------------#
+        #   将新图片转换成Image的形式
+        #------------------------------------------------#
         image = Image.fromarray(np.uint8(seg_img)).resize((orininal_w,orininal_h))
+        #------------------------------------------------#
+        #   将新图片和原图片混合
+        #------------------------------------------------#
         if self.blend:
             image = Image.blend(old_img,image,0.7)
         
         return image
 
+    def get_FPS(self, image, test_interval):
+        orininal_h = np.array(image).shape[0]
+        orininal_w = np.array(image).shape[1]
+
+        image, nw, nh = self.letterbox_image(image,(self.model_image_size[1],self.model_image_size[0]))
+        images = [np.array(image)/255]
+        images = np.transpose(images,(0,3,1,2))
+
+        with torch.no_grad():
+            images = torch.from_numpy(images).type(torch.FloatTensor)
+            if self.cuda:
+                images =images.cuda()
+            pr = self.net(images)[0]
+            pr = F.softmax(pr.permute(1,2,0),dim = -1).cpu().numpy().argmax(axis=-1)
+            pr = pr[int((self.model_image_size[0]-nh)//2):int((self.model_image_size[0]-nh)//2+nh), int((self.model_image_size[1]-nw)//2):int((self.model_image_size[1]-nw)//2+nw)]
+
+        t1 = time.time()
+        for _ in range(test_interval):
+            with torch.no_grad():
+                pr = self.net(images)[0]
+                pr = F.softmax(pr.permute(1,2,0),dim = -1).cpu().numpy().argmax(axis=-1)
+                pr = pr[int((self.model_image_size[0]-nh)//2):int((self.model_image_size[0]-nh)//2+nh), int((self.model_image_size[1]-nw)//2):int((self.model_image_size[1]-nw)//2+nw)]
+
+        t2 = time.time()
+        tact_time = (t2 - t1) / test_interval
+        return tact_time

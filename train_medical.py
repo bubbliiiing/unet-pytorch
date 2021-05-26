@@ -1,15 +1,10 @@
-import time
+import os
 
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
-import torchvision.models as models
-from PIL import Image
-from torch import nn
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
-from torchvision import models
 from tqdm import tqdm
 
 from nets.unet import Unet
@@ -34,9 +29,9 @@ def fit_one_epoch(net,epoch,epoch_size,gen,Epoch,cuda):
             imgs, pngs, labels = batch
 
             with torch.no_grad():
-                imgs = Variable(torch.from_numpy(imgs).type(torch.FloatTensor))
-                pngs = Variable(torch.from_numpy(pngs).type(torch.FloatTensor)).long()
-                labels = Variable(torch.from_numpy(labels).type(torch.FloatTensor))
+                imgs = torch.from_numpy(imgs).type(torch.FloatTensor)
+                pngs = torch.from_numpy(pngs).type(torch.FloatTensor).long()
+                labels = torch.from_numpy(labels).type(torch.FloatTensor)
                 if cuda:
                     imgs = imgs.cuda()
                     pngs = pngs.cuda()
@@ -100,6 +95,10 @@ if __name__ == "__main__":
     #   Cuda的使用
     #-------------------------------#
     Cuda = True
+    #------------------------------#
+    #   数据集路径
+    #------------------------------#
+    dataset_path = "Medical_Datasets/"
 
     # 获取model
     model = Unet(num_classes=NUM_CLASSES, in_channels=inputs_size[-1], pretrained=pretrained).train()
@@ -123,8 +122,7 @@ if __name__ == "__main__":
         cudnn.benchmark = True
         net = net.cuda()
 
-    # 打开数据集的txt
-    with open(r"./Medical_Datasets/ImageSets/Segmentation/train.txt","r") as f:
+    with open(os.path.join(dataset_path, "ImageSets/Segmentation/train.txt"),"r") as f:
         train_lines = f.readlines()
         
     #------------------------------------------------------#
@@ -136,19 +134,22 @@ if __name__ == "__main__":
     #   提示OOM或者显存不足请调小Batch_size
     #------------------------------------------------------#
     if True:
-        lr = 1e-4
-        Init_Epoch = 0
-        Interval_Epoch = 50
-        Batch_size = 2
+        lr              = 1e-4
+        Init_Epoch      = 0
+        Interval_Epoch  = 50
+        Batch_size      = 2
         
-        optimizer = optim.Adam(model.parameters(),lr)
-        lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
+        optimizer       = optim.Adam(model.parameters(),lr)
+        lr_scheduler    = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
 
-        train_dataset = DeeplabDataset(train_lines, inputs_size, NUM_CLASSES, True)
-        gen = DataLoader(train_dataset, batch_size=Batch_size, num_workers=4, pin_memory=True,
+        train_dataset   = DeeplabDataset(train_lines, inputs_size, NUM_CLASSES, True, dataset_path)
+        gen             = DataLoader(train_dataset, batch_size=Batch_size, num_workers=4, pin_memory=True,
                                 drop_last=True, collate_fn=deeplab_dataset_collate)
 
-        epoch_size      = max(1, len(train_lines)//Batch_size)
+        epoch_size      = len(train_lines) // Batch_size
+
+        if epoch_size == 0:
+            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
 
         for param in model.vgg.parameters():
             param.requires_grad = False
@@ -158,19 +159,22 @@ if __name__ == "__main__":
             lr_scheduler.step()
     
     if True:
-        lr = 1e-5
-        Interval_Epoch = 50
-        Epoch = 100
-        Batch_size = 2
+        lr              = 1e-5
+        Interval_Epoch  = 50
+        Epoch           = 100
+        Batch_size      = 2
 
-        optimizer = optim.Adam(model.parameters(),lr)
-        lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
+        optimizer       = optim.Adam(model.parameters(),lr)
+        lr_scheduler    = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
 
-        train_dataset = DeeplabDataset(train_lines, inputs_size, NUM_CLASSES, True)
-        gen = DataLoader(train_dataset, batch_size=Batch_size, num_workers=4, pin_memory=True,
+        train_dataset   = DeeplabDataset(train_lines, inputs_size, NUM_CLASSES, True, dataset_path)
+        gen             = DataLoader(train_dataset, batch_size=Batch_size, num_workers=4, pin_memory=True,
                                 drop_last=True, collate_fn=deeplab_dataset_collate)
 
-        epoch_size      = max(1, len(train_lines)//Batch_size)
+        epoch_size      = len(train_lines) // Batch_size
+        
+        if epoch_size == 0:
+            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
 
         for param in model.vgg.parameters():
             param.requires_grad = True
