@@ -40,7 +40,7 @@ VOC拓展数据集的百度网盘如下：
 ```python
 img/street.jpg
 ```    
-2. 利用video.py可进行摄像头检测。    
+2. 在predict.py里面进行设置可以进行fps测试和video视频检测。      
 #### b、医药预训练权重
 1. 下载完库后解压，如果想要利用医药数据集训练好的权重进行预测，在百度网盘或者release下载unet_medical.pth，放入model_data，修改unet.py中的model_path和num_classes；
 ```python
@@ -81,7 +81,7 @@ _defaults = {
 ```python
 img/street.jpg
 ```   
-4. 利用video.py可进行摄像头检测。    
+4. 在predict.py里面进行设置可以进行fps测试和video视频检测。    
 
 ## 训练步骤
 ### 一、训练voc数据集
