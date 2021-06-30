@@ -103,7 +103,7 @@ def fit_one_epoch(net,epoch,epoch_size,epoch_size_val,gen,genval,Epoch,cuda):
                                 'lr'        : get_lr(optimizer)})
             pbar.update(1)
             
-    loss_history.append_loss(total_loss/(epoch_size+1), val_loss/(epoch_size_val+1))
+    loss_history.append_loss(total_loss/(epoch_size+1), val_toal_loss/(epoch_size_val+1))
     print('Finish Validation')
     print('Epoch:'+ str(epoch+1) + '/' + str(Epoch))
     print('Total Loss: %.4f || Val Loss: %.4f ' % (total_loss/(epoch_size+1),val_toal_loss/(epoch_size_val+1)))
