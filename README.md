@@ -28,7 +28,7 @@ unet_medical.pth是使用示例的细胞分割数据集训练的。
 
 ## 文件下载
 训练所需的unet_voc.pth和unet_medical.pth可在百度网盘中下载。    
-链接: https://pan.baidu.com/s/1AUBpqsSgamoQGEYpNjJg7A 提取码: i3ck     
+链接: https://pan.baidu.com/s/1b-mQ7DjialleyagmuUWYMQ 提取码: 97pw    
 
 VOC拓展数据集的百度网盘如下：  
 链接: https://pan.baidu.com/s/1BrR7AUM1XJvPWjKMIy2uEw 提取码: vszf     
