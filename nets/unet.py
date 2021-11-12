@@ -6,10 +6,10 @@ from nets.vgg import VGG16
 class unetUp(nn.Module):
     def __init__(self, in_size, out_size):
         super(unetUp, self).__init__()
-        self.conv1 = nn.Conv2d(in_size, out_size, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(out_size, out_size, kernel_size=3, padding=1)
-        self.up = nn.UpsamplingBilinear2d(scale_factor=2)
-        self.relu = nn.ReLU(inplace=True)
+        self.conv1 = nn.Conv2d(in_size, out_size, kernel_size = 3, padding = 1)
+        self.conv2 = nn.Conv2d(out_size, out_size, kernel_size = 3, padding = 1)
+        self.up = nn.UpsamplingBilinear2d(scale_factor = 2)
+        self.relu = nn.ReLU(inplace = True)
 
     def forward(self, inputs1, inputs2):
         outputs = torch.cat([inputs1, self.up(inputs2)], 1)
@@ -20,9 +20,9 @@ class unetUp(nn.Module):
         return outputs
 
 class Unet(nn.Module):
-    def __init__(self, num_classes=21, in_channels=3, pretrained=False):
+    def __init__(self, num_classes = 21, in_channels = 3, pretrained = False):
         super(Unet, self).__init__()
-        self.vgg = VGG16(pretrained=pretrained,in_channels=in_channels)
+        self.vgg = VGG16(pretrained = pretrained,in_channels = in_channels)
         in_filters = [192, 384, 768, 1024]
         out_filters = [64, 128, 256, 512]
         # upsampling
@@ -64,4 +64,3 @@ class Unet(nn.Module):
                 elif isinstance(module, nn.BatchNorm2d):
                     module.weight.data.fill_(1)
                     module.bias.data.zero_()
-
