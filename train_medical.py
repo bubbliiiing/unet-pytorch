@@ -181,17 +181,17 @@ if __name__ == "__main__":
         start_epoch = Init_Epoch
         end_epoch   = Freeze_Epoch
 
+        epoch_step      = len(train_lines) // batch_size
+        
+        if epoch_step == 0:
+            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
+
         optimizer       = optim.Adam(model_train.parameters(), lr)
         lr_scheduler    = optim.lr_scheduler.StepLR(optimizer, step_size = 1, gamma = 0.96)
 
         train_dataset   = UnetDataset(train_lines, input_shape, num_classes, True, VOCdevkit_path)
         gen             = DataLoader(train_dataset, shuffle = True, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
                                     drop_last = True, collate_fn = unet_dataset_collate)
-
-        epoch_step      = len(train_lines) // batch_size
-        
-        if epoch_step == 0:
-            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
 
         #------------------------------------#
         #   冻结一定部分训练
@@ -210,17 +210,17 @@ if __name__ == "__main__":
         start_epoch = Freeze_Epoch
         end_epoch   = UnFreeze_Epoch
 
+        epoch_step      = len(train_lines) // batch_size
+
+        if epoch_step == 0:
+            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
+
         optimizer       = optim.Adam(model_train.parameters(), lr)
         lr_scheduler    = optim.lr_scheduler.StepLR(optimizer, step_size = 1, gamma = 0.96)
 
         train_dataset   = UnetDataset(train_lines, input_shape, num_classes, True, VOCdevkit_path)
         gen             = DataLoader(train_dataset, shuffle = True, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
                                     drop_last = True, collate_fn = unet_dataset_collate)
-
-        epoch_step      = len(train_lines) // batch_size
-
-        if epoch_step == 0:
-            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
             
         if Freeze_Train:
             for param in model.vgg.parameters():
