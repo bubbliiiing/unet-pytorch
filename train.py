@@ -47,6 +47,11 @@ if __name__ == "__main__":
     #   自己需要的分类个数+1，如2 + 1
     #-------------------------------#
     num_classes = 21
+    #-------------------------------#
+    #   主干网络选择
+    #   vgg、resnet50
+    #-------------------------------#
+    backbone    = "vgg"
     #----------------------------------------------------------------------------------------------------------------------------#
     #   是否使用主干网络的预训练权重，此处使用的是主干的权重，因此是在模型构建的时候进行加载的。
     #   如果设置了model_path，则主干的权值无需加载，pretrained的值无意义。
@@ -73,11 +78,11 @@ if __name__ == "__main__":
     #   网络一般不从0开始训练，至少会使用主干部分的权值，有些论文提到可以不用预训练，主要原因是他们 数据集较大 且 调参能力优秀。
     #   如果一定要训练网络的主干部分，可以了解imagenet数据集，首先训练分类模型，分类模型的 主干部分 和该模型通用，基于此进行训练。
     #----------------------------------------------------------------------------------------------------------------------------#
-    model_path  = "model_data/unet_voc.pth"
+    model_path  = "model_data/unet_vgg_voc.pth"
     #------------------------------#
     #   输入图片的大小
     #------------------------------#
-    input_shape         = [512, 512]
+    input_shape = [512, 512]
     
     #----------------------------------------------------#
     #   训练分为两个阶段，分别是冻结阶段和解冻阶段。
@@ -134,7 +139,7 @@ if __name__ == "__main__":
     #------------------------------------------------------#
     num_workers     = 4
 
-    model = Unet(num_classes=num_classes, pretrained=pretrained).train()
+    model = Unet(num_classes=num_classes, pretrained=pretrained, backbone=backbone).train()
     if not pretrained:
         weights_init(model)
     if model_path != '':
@@ -200,14 +205,13 @@ if __name__ == "__main__":
         #   冻结一定部分训练
         #------------------------------------#
         if Freeze_Train:
-            for param in model.vgg.parameters():
-                param.requires_grad = False
+            model.freeze_backbone()
 
         for epoch in range(start_epoch, end_epoch):
             fit_one_epoch(model_train, model, loss_history, optimizer, epoch, 
                     epoch_step, epoch_step_val, gen, gen_val, end_epoch, Cuda, dice_loss, focal_loss, cls_weights, num_classes)
             lr_scheduler.step()
-    
+
     if True:
         batch_size  = Unfreeze_batch_size
         lr          = Unfreeze_lr
@@ -231,8 +235,7 @@ if __name__ == "__main__":
                                     drop_last = True, collate_fn = unet_dataset_collate)
             
         if Freeze_Train:
-            for param in model.vgg.parameters():
-                param.requires_grad = True
+            model.unfreeze_backbone()
 
         for epoch in range(start_epoch,end_epoch):
             fit_one_epoch(model_train, model, loss_history, optimizer, epoch, 

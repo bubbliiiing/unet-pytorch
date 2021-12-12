@@ -50,6 +50,11 @@ if __name__ == "__main__":
     #   自己需要的分类个数+1，如2+1
     #-------------------------------#
     num_classes = 2
+    #-------------------------------#
+    #   主干网络选择
+    #   vgg、resnet50
+    #-------------------------------#
+    backbone    = "vgg"
     #----------------------------------------------------------------------------------------------------------------------------#
     #   是否使用主干网络的预训练权重，此处使用的是主干的权重，因此是在模型构建的时候进行加载的。
     #   如果设置了model_path，则主干的权值无需加载，pretrained的值无意义。
@@ -138,7 +143,7 @@ if __name__ == "__main__":
     #------------------------------------------------------#
     num_workers     = 4
 
-    model = Unet(num_classes=num_classes, pretrained=pretrained).train()
+    model = Unet(num_classes=num_classes, pretrained=pretrained, backbone=backbone).train()
     if not pretrained:
         weights_init(model)
     if model_path != '':
@@ -197,8 +202,7 @@ if __name__ == "__main__":
         #   冻结一定部分训练
         #------------------------------------#
         if Freeze_Train:
-            for param in model.vgg.parameters():
-                param.requires_grad = False
+            model.freeze_backbone()
 
         for epoch in range(start_epoch, end_epoch):
             fit_one_epoch_no_val(model_train, model, loss_history, optimizer, epoch, epoch_step, gen, end_epoch, Cuda, dice_loss, focal_loss, cls_weights, num_classes)
@@ -223,8 +227,7 @@ if __name__ == "__main__":
                                     drop_last = True, collate_fn = unet_dataset_collate)
             
         if Freeze_Train:
-            for param in model.vgg.parameters():
-                param.requires_grad = True
+            model.unfreeze_backbone()
 
         for epoch in range(start_epoch,end_epoch):
             fit_one_epoch_no_val(model_train, model, loss_history, optimizer, epoch, epoch_step, gen, end_epoch, Cuda, dice_loss, focal_loss, cls_weights, num_classes)

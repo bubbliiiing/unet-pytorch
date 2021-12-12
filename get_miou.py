@@ -4,7 +4,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from unet import Unet
-from utils.utils_metrics import compute_mIoU
+from utils.utils_metrics import compute_mIoU, show_results
 
 '''
 进行指标评估需要注意以下几点：
@@ -35,9 +35,10 @@ if __name__ == "__main__":
     #-------------------------------------------------------#
     VOCdevkit_path  = 'VOCdevkit'
 
-    image_ids   = open(os.path.join(VOCdevkit_path, "VOC2007/ImageSets/Segmentation/val.txt"),'r').read().splitlines() 
-    gt_dir      = os.path.join(VOCdevkit_path, "VOC2007/SegmentationClass/")
-    pred_dir    = "miou_out"
+    image_ids       = open(os.path.join(VOCdevkit_path, "VOC2007/ImageSets/Segmentation/val.txt"),'r').read().splitlines() 
+    gt_dir          = os.path.join(VOCdevkit_path, "VOC2007/SegmentationClass/")
+    miou_out_path   = "miou_out"
+    pred_dir        = os.path.join(miou_out_path, 'detection-results')
 
     if miou_mode == 0 or miou_mode == 1:
         if not os.path.exists(pred_dir):
@@ -57,5 +58,6 @@ if __name__ == "__main__":
 
     if miou_mode == 0 or miou_mode == 2:
         print("Get miou.")
-        compute_mIoU(gt_dir, pred_dir, image_ids, num_classes, name_classes)  # 执行计算mIoU的函数
+        hist, IoUs, PA_Recall, Precision = compute_mIoU(gt_dir, pred_dir, image_ids, num_classes, name_classes)  # 执行计算mIoU的函数
         print("Get miou done.")
+        show_results(miou_out_path, hist, IoUs, PA_Recall, Precision, name_classes)

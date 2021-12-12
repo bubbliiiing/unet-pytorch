@@ -26,11 +26,15 @@ class Unet(object):
         #   训练好后logs文件夹下存在多个权值文件，选择验证集损失较低的即可。
         #   验证集损失较低不代表miou较高，仅代表该权值在验证集上泛化性能较好。
         #-------------------------------------------------------------------#
-        "model_path"    : 'model_data/unet_voc.pth',
+        "model_path"    : 'model_data/unet_vgg_voc.pth',
         #--------------------------------#
         #   所需要区分的类的个数+1
         #--------------------------------#
         "num_classes"   : 21,
+        #--------------------------------#
+        #   所使用的的主干网络：vgg、resnet50   
+        #--------------------------------#
+        "backbone"      : "vgg",
         #--------------------------------#
         #   输入图片的大小
         #--------------------------------#
@@ -40,10 +44,10 @@ class Unet(object):
         #   让识别结果和原图混合
         #--------------------------------#
         "blend"         : True,
-        #-------------------------------#
+        #--------------------------------#
         #   是否使用Cuda
         #   没有GPU可以设置成False
-        #-------------------------------#
+        #--------------------------------#
         "cuda"          : True,
     }
 
@@ -75,13 +79,13 @@ class Unet(object):
     #   获得所有的分类
     #---------------------------------------------------#
     def generate(self):
-        self.net = unet(num_classes = self.num_classes)
+        self.net = unet(num_classes = self.num_classes, backbone=self.backbone)
 
         device      = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.net.load_state_dict(torch.load(self.model_path, map_location=device), strict=False)
+        self.net.load_state_dict(torch.load(self.model_path, map_location=device))
         self.net    = self.net.eval()
         print('{} model, and classes loaded.'.format(self.model_path))
-        
+
         if self.cuda:
             self.net = nn.DataParallel(self.net)
             self.net = self.net.cuda()

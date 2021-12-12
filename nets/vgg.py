@@ -19,11 +19,16 @@ class VGG(nn.Module):
         self._initialize_weights()
 
     def forward(self, x):
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)
-        x = self.classifier(x)
-        return x
+        # x = self.features(x)
+        # x = self.avgpool(x)
+        # x = torch.flatten(x, 1)
+        # x = self.classifier(x)
+        feat1 = self.features[  :4 ](x)
+        feat2 = self.features[4 :9 ](feat1)
+        feat3 = self.features[9 :16](feat2)
+        feat4 = self.features[16:23](feat3)
+        feat5 = self.features[23:-1](feat4)
+        return [feat1, feat2, feat3, feat4, feat5]
 
     def _initialize_weights(self):
         for m in self.modules():
@@ -59,7 +64,7 @@ cfgs = {
 }
 
 
-def VGG16(pretrained, in_channels, **kwargs):
+def VGG16(pretrained, in_channels = 3, **kwargs):
     model = VGG(make_layers(cfgs["D"], batch_norm = False, in_channels = in_channels), **kwargs)
     if pretrained:
         state_dict = load_state_dict_from_url("https://download.pytorch.org/models/vgg16-397923af.pth", model_dir="./model_data")
