@@ -32,7 +32,7 @@ unet_vgg_medical.pth是使用示例的细胞分割数据集训练的。
 链接: https://pan.baidu.com/s/1A22fC5cPRb74gqrpq7O9-A    
 提取码: 6n2c   
 
-VOC拓展数据集的百度网盘如下：
+VOC拓展数据集的百度网盘如下：   
 链接: https://pan.baidu.com/s/1vkk3lMheUm6IjTXznlg7Ng    
 提取码: 44mk   
 
