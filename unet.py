@@ -39,11 +39,14 @@ class Unet(object):
         #   输入图片的大小
         #--------------------------------#
         "input_shape"   : [512, 512],
-        #--------------------------------#
-        #   blend参数用于控制是否
-        #   让识别结果和原图混合
-        #--------------------------------#
-        "blend"         : True,
+        #-------------------------------------------------#
+        #   mix_type参数用于控制检测结果的可视化方式
+        #
+        #   mix_type = 0的时候代表原图与生成的图进行混合
+        #   mix_type = 1的时候代表仅保留生成的图
+        #   mix_type = 2的时候代表仅扣去背景，仅保留原图中的目标
+        #-------------------------------------------------#
+        "mix_type"          : 0,
         #--------------------------------#
         #   是否使用Cuda
         #   没有GPU可以设置成False
@@ -141,26 +144,41 @@ class Unet(object):
             #   取出每一个像素点的种类
             #---------------------------------------------------#
             pr = pr.argmax(axis=-1)
-    
-        #------------------------------------------------#
-        #   创建一副新图，并根据每个像素点的种类赋予颜色
-        #------------------------------------------------#
-        seg_img = np.zeros((np.shape(pr)[0], np.shape(pr)[1], 3))
-        for c in range(self.num_classes):
-            seg_img[:,:,0] += ((pr[:,: ] == c )*( self.colors[c][0] )).astype('uint8')
-            seg_img[:,:,1] += ((pr[:,: ] == c )*( self.colors[c][1] )).astype('uint8')
-            seg_img[:,:,2] += ((pr[:,: ] == c )*( self.colors[c][2] )).astype('uint8')
 
-        #------------------------------------------------#
-        #   将新图片转换成Image的形式
-        #------------------------------------------------#
-        image = Image.fromarray(np.uint8(seg_img))
+        if self.mix_type == 0:
+            # seg_img = np.zeros((np.shape(pr)[0], np.shape(pr)[1], 3))
+            # for c in range(self.num_classes):
+            #     seg_img[:, :, 0] += ((pr[:, :] == c ) * self.colors[c][0]).astype('uint8')
+            #     seg_img[:, :, 1] += ((pr[:, :] == c ) * self.colors[c][1]).astype('uint8')
+            #     seg_img[:, :, 2] += ((pr[:, :] == c ) * self.colors[c][2]).astype('uint8')
+            seg_img = np.reshape(np.array(self.colors, np.uint8)[np.reshape(pr, [-1])], [orininal_h, orininal_w, -1])
+            #------------------------------------------------#
+            #   将新图片转换成Image的形式
+            #------------------------------------------------#
+            image   = Image.fromarray(np.uint8(seg_img))
+            #------------------------------------------------#
+            #   将新图与原图及进行混合
+            #------------------------------------------------#
+            image   = Image.blend(old_img, image, 0.7)
 
-        #------------------------------------------------#
-        #   将新图片和原图片混合
-        #------------------------------------------------#
-        if self.blend:
-            image = Image.blend(old_img,image,0.7)
+        elif self.mix_type == 1:
+            # seg_img = np.zeros((np.shape(pr)[0], np.shape(pr)[1], 3))
+            # for c in range(self.num_classes):
+            #     seg_img[:, :, 0] += ((pr[:, :] == c ) * self.colors[c][0]).astype('uint8')
+            #     seg_img[:, :, 1] += ((pr[:, :] == c ) * self.colors[c][1]).astype('uint8')
+            #     seg_img[:, :, 2] += ((pr[:, :] == c ) * self.colors[c][2]).astype('uint8')
+            seg_img = np.reshape(np.array(self.colors, np.uint8)[np.reshape(pr, [-1])], [orininal_h, orininal_w, -1])
+            #------------------------------------------------#
+            #   将新图片转换成Image的形式
+            #------------------------------------------------#
+            image   = Image.fromarray(np.uint8(seg_img))
+
+        elif self.mix_type == 2:
+            seg_img = (np.expand_dims(pr != 0, -1) * np.array(old_img, np.float32)).astype('uint8')
+            #------------------------------------------------#
+            #   将新图片转换成Image的形式
+            #------------------------------------------------#
+            image = Image.fromarray(np.uint8(seg_img))
         
         return image
 
