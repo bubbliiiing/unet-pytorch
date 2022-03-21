@@ -27,7 +27,7 @@ class VGG(nn.Module):
         feat2 = self.features[4 :9 ](feat1)
         feat3 = self.features[9 :16](feat2)
         feat4 = self.features[16:23](feat3)
-        feat5 = self.features[23:-1](feat4)
+        feat5 = self.features[23:31](feat4)
         return [feat1, feat2, feat3, feat4, feat5]
 
     def _initialize_weights(self):
