@@ -167,9 +167,9 @@ def fit_one_epoch_no_val(model_train, model, loss_history, optimizer, epoch, epo
 
     print('Finish Train')
             
-    loss_history.append_loss(total_loss/ epoch_step)
+    loss_history.append_loss(epoch + 1, total_loss/ epoch_step)
     print('Finish Validation')
     print('Epoch:'+ str(epoch+1) + '/' + str(Epoch))
     print('Total Loss: %.3f' % (total_loss / epoch_step))
     if (epoch + 1) % save_period == 0 or epoch + 1 == Epoch:
-        torch.save(model.state_dict(), os.path.join(save_dir, 'logs/ep%03d-loss%.3f.pth'%((epoch + 1), total_loss / epoch_step)))
+        torch.save(model.state_dict(), os.path.join(save_dir, 'ep%03d-loss%.3f.pth'%((epoch + 1), total_loss / epoch_step)))

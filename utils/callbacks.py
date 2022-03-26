@@ -27,7 +27,7 @@ class LossHistory():
         except:
             pass
 
-    def append_loss(self, epoch, loss, val_loss):
+    def append_loss(self, epoch, loss, val_loss = None):
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
 

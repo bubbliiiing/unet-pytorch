@@ -90,14 +90,16 @@ if __name__ == "__main__":
     #      
     #   在此提供若干参数设置建议，各位训练者根据自己的需求进行灵活调整：
     #   （一）从整个模型的预训练权重开始训练： 
-    #       Init_Epoch = 0，Freeze_Epoch = 50，UnFreeze_Epoch = 100，Freeze_Train = True（默认参数）
+    #       Init_Epoch = 0，Freeze_Epoch = 50，UnFreeze_Epoch = 100，Freeze_Train = True（冻结训练）
     #       Init_Epoch = 0，UnFreeze_Epoch = 100，Freeze_Train = False（不冻结训练）
     #       其中：UnFreeze_Epoch可以在100-300之间调整。optimizer_type = 'sgd'，Init_lr = 1e-2。
+    #                                                 optimizer_type = 'adam'，Init_lr = 1e-3，weight_decay = 0。
     #   （二）从主干网络的预训练权重开始训练：
     #       Init_Epoch = 0，Freeze_Epoch = 50，UnFreeze_Epoch = 120，Freeze_Train = True（冻结训练）
     #       Init_Epoch = 0，UnFreeze_Epoch = 120，Freeze_Train = False（不冻结训练）
     #       其中：由于从主干网络的预训练权重开始训练，主干的权值不一定适合语义分割，需要更多的训练跳出局部最优解。
     #             UnFreeze_Epoch可以在120-300之间调整。optimizer_type = 'sgd'，Init_lr = 1e-2。
+    #                                                 optimizer_type = 'adam'，Init_lr = 1e-3，weight_decay = 0。
     #   （三）batch_size的设置：
     #       在显卡能够接受的范围内，以大为好。显存不足与数据集大小无关，提示显存不足（OOM或者CUDA out of memory）请调小batch_size。
     #       受到BatchNorm层影响，batch_size最小为2，不能为1。
@@ -144,18 +146,20 @@ if __name__ == "__main__":
     #                   当使用SGD优化器时建议设置   Init_lr=1e-2
     #   Min_lr          模型的最小学习率，默认为最大学习率的0.01
     #------------------------------------------------------------------#
-    Init_lr             = 1e-2
+    Init_lr             = 1e-3
     Min_lr              = Init_lr * 0.01
     #------------------------------------------------------------------#
     #   optimizer_type  使用到的优化器种类，可选的有adam、sgd
+    #                   batch_size < 4时建议设置为adam
     #                   当使用Adam优化器时建议设置  Init_lr=1e-3
     #                   当使用SGD优化器时建议设置   Init_lr=1e-2
     #   momentum        优化器内部使用到的momentum参数
     #   weight_decay    权值衰减，可防止过拟合
+    #                   adam会导致weight_decay错误，使用adam时建议设置为0。
     #------------------------------------------------------------------#
-    optimizer_type      = "sgd"
+    optimizer_type      = "adam"
     momentum            = 0.937
-    weight_decay        = 5e-4
+    weight_decay        = 0
     #------------------------------------------------------------------#
     #   lr_decay_type   使用到的学习率下降方式，可选的有'step'、'cos'
     #------------------------------------------------------------------#
@@ -258,8 +262,8 @@ if __name__ == "__main__":
         #   判断当前batch_size与64的差别，自适应调整学习率
         #-------------------------------------------------------------------#
         nbs         = 64
-        Init_lr_fit = max(batch_size / nbs * Init_lr, 1e-4)
-        Min_lr_fit  = max(batch_size / nbs * Min_lr, 1e-6)
+        Init_lr_fit = max(batch_size / nbs * Init_lr, 3e-4)
+        Min_lr_fit  = max(batch_size / nbs * Min_lr, 3e-6)
 
         #---------------------------------------#
         #   根据optimizer_type选择优化器
@@ -305,8 +309,8 @@ if __name__ == "__main__":
                 #   判断当前batch_size与64的差别，自适应调整学习率
                 #-------------------------------------------------------------------#
                 nbs         = 64
-                Init_lr_fit = max(batch_size / nbs * Init_lr, 1e-4)
-                Min_lr_fit  = max(batch_size / nbs * Min_lr, 1e-6)
+                Init_lr_fit = max(batch_size / nbs * Init_lr, 3e-4)
+                Min_lr_fit  = max(batch_size / nbs * Min_lr, 3e-6)
                 #---------------------------------------#
                 #   获得学习率下降的公式
                 #---------------------------------------#
