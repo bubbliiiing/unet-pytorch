@@ -1,5 +1,7 @@
 import os
 
+import matplotlib
+matplotlib.use('Agg')
 import scipy.signal
 from matplotlib import pyplot as plt
 
