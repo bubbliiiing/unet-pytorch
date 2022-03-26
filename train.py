@@ -7,7 +7,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from nets.unet import Unet
-from nets.unet_training import weights_init
+from nets.unet_training import get_lr_scheduler, set_optimizer_lr, weights_init
 from utils.callbacks import LossHistory
 from utils.dataloader import UnetDataset, unet_dataset_collate
 from utils.utils_fit import fit_one_epoch
@@ -37,27 +37,28 @@ from utils.utils_fit import fit_one_epoch
    这些都是经验上，只能靠各位同学多查询资料和自己试试了。
 '''
 if __name__ == "__main__":
-    #-------------------------------#
-    #   是否使用Cuda
-    #   没有GPU可以设置成False
-    #-------------------------------#
+    #---------------------------------#
+    #   Cuda    是否使用Cuda
+    #           没有GPU可以设置成False
+    #---------------------------------#
     Cuda = True
-    #-------------------------------#
-    #   训练自己的数据集必须要修改的
-    #   自己需要的分类个数+1，如2 + 1
-    #-------------------------------#
+    #-----------------------------------------------------#
+    #   num_classes     训练自己的数据集必须要修改的
+    #                   自己需要的分类个数+1，如2+1
+    #-----------------------------------------------------#
     num_classes = 21
-    #-------------------------------#
+    #-----------------------------------------------------#
     #   主干网络选择
-    #   vgg、resnet50
-    #-------------------------------#
+    #   vgg
+    #   resnet50
+    #-----------------------------------------------------#
     backbone    = "vgg"
     #----------------------------------------------------------------------------------------------------------------------------#
-    #   是否使用主干网络的预训练权重，此处使用的是主干的权重，因此是在模型构建的时候进行加载的。
-    #   如果设置了model_path，则主干的权值无需加载，pretrained的值无意义。
-    #   如果不设置model_path，pretrained = True，此时仅加载主干开始训练。
-    #   如果不设置model_path，pretrained = False，Freeze_Train = Fasle，此时从0开始训练，且没有冻结主干的过程。
-    #--------------------------------------------------------------------------------------------------------------------------
+    #   pretrained      是否使用主干网络的预训练权重，此处使用的是主干的权重，因此是在模型构建的时候进行加载的。
+    #                   如果设置了model_path，则主干的权值无需加载，pretrained的值无意义。
+    #                   如果不设置model_path，pretrained = True，此时仅加载主干开始训练。
+    #                   如果不设置model_path，pretrained = False，Freeze_Train = Fasle，此时从0开始训练，且没有冻结主干的过程。
+    #----------------------------------------------------------------------------------------------------------------------------#
     pretrained  = False
     #----------------------------------------------------------------------------------------------------------------------------#
     #   权值文件的下载请看README，可以通过网盘下载。模型的 预训练权重 对不同数据集是通用的，因为特征是通用的。
@@ -73,71 +74,131 @@ if __name__ == "__main__":
     #   此处使用的是整个模型的权重，因此是在train.py进行加载的，pretrain不影响此处的权值加载。
     #   如果想要让模型从主干的预训练权值开始训练，则设置model_path = ''，pretrain = True，此时仅加载主干。
     #   如果想要让模型从0开始训练，则设置model_path = ''，pretrain = Fasle，Freeze_Train = Fasle，此时从0开始训练，且没有冻结主干的过程。
-    #   一般来讲，从0开始训练效果会很差，因为权值太过随机，特征提取效果不明显。
-    #
-    #   网络一般不从0开始训练，至少会使用主干部分的权值，有些论文提到可以不用预训练，主要原因是他们 数据集较大 且 调参能力优秀。
-    #   如果一定要训练网络的主干部分，可以了解imagenet数据集，首先训练分类模型，分类模型的 主干部分 和该模型通用，基于此进行训练。
+    #   
+    #   一般来讲，网络从0开始的训练效果会很差，因为权值太过随机，特征提取效果不明显，因此非常、非常、非常不建议大家从0开始训练！
+    #   如果一定要从0开始，可以了解imagenet数据集，首先训练分类模型，获得网络的主干部分权值，分类模型的 主干部分 和该模型通用，基于此进行训练。
     #----------------------------------------------------------------------------------------------------------------------------#
     model_path  = "model_data/unet_vgg_voc.pth"
-    #------------------------------#
-    #   输入图片的大小
-    #------------------------------#
+    #-----------------------------------------------------#
+    #   input_shape     输入图片的大小，32的倍数
+    #-----------------------------------------------------#
     input_shape = [512, 512]
     
-    #----------------------------------------------------#
-    #   训练分为两个阶段，分别是冻结阶段和解冻阶段。
-    #   显存不足与数据集大小无关，提示显存不足请调小batch_size。
-    #----------------------------------------------------#
-    #----------------------------------------------------#
+    #----------------------------------------------------------------------------------------------------------------------------#
+    #   训练分为两个阶段，分别是冻结阶段和解冻阶段。设置冻结阶段是为了满足机器性能不足的同学的训练需求。
+    #   冻结训练需要的显存较小，显卡非常差的情况下，可设置Freeze_Epoch等于UnFreeze_Epoch，此时仅仅进行冻结训练。
+    #      
+    #   在此提供若干参数设置建议，各位训练者根据自己的需求进行灵活调整：
+    #   （一）从整个模型的预训练权重开始训练： 
+    #       Init_Epoch = 0，Freeze_Epoch = 50，UnFreeze_Epoch = 100，Freeze_Train = True（默认参数）
+    #       Init_Epoch = 0，UnFreeze_Epoch = 100，Freeze_Train = False（不冻结训练）
+    #       其中：UnFreeze_Epoch可以在100-300之间调整。optimizer_type = 'sgd'，Init_lr = 1e-2。
+    #   （二）从主干网络的预训练权重开始训练：
+    #       Init_Epoch = 0，Freeze_Epoch = 50，UnFreeze_Epoch = 120，Freeze_Train = True（冻结训练）
+    #       Init_Epoch = 0，UnFreeze_Epoch = 120，Freeze_Train = False（不冻结训练）
+    #       其中：由于从主干网络的预训练权重开始训练，主干的权值不一定适合语义分割，需要更多的训练跳出局部最优解。
+    #             UnFreeze_Epoch可以在120-300之间调整。optimizer_type = 'sgd'，Init_lr = 1e-2。
+    #   （三）batch_size的设置：
+    #       在显卡能够接受的范围内，以大为好。显存不足与数据集大小无关，提示显存不足（OOM或者CUDA out of memory）请调小batch_size。
+    #       受到BatchNorm层影响，batch_size最小为2，不能为1。
+    #       正常情况下Freeze_batch_size建议为Unfreeze_batch_size的1-2倍。不建议设置的差距过大，因为关系到学习率的自动调整。
+    #----------------------------------------------------------------------------------------------------------------------------#
+    #------------------------------------------------------------------#
     #   冻结阶段训练参数
     #   此时模型的主干被冻结了，特征提取网络不发生改变
     #   占用的显存较小，仅对网络进行微调
-    #----------------------------------------------------#
+    #   Init_Epoch          模型当前开始的训练世代，其值可以大于Freeze_Epoch，如设置：
+    #                       Init_Epoch = 60、Freeze_Epoch = 50、UnFreeze_Epoch = 100
+    #                       会跳过冻结阶段，直接从60代开始，并调整对应的学习率。
+    #                       （断点续练时使用）
+    #   Freeze_Epoch        模型冻结训练的Freeze_Epoch
+    #                       (当Freeze_Train=False时失效)
+    #   Freeze_batch_size   模型冻结训练的batch_size
+    #                       (当Freeze_Train=False时失效)
+    #------------------------------------------------------------------#
     Init_Epoch          = 0
     Freeze_Epoch        = 50
     Freeze_batch_size   = 2
-    Freeze_lr           = 1e-4
-    #----------------------------------------------------#
+    #------------------------------------------------------------------#
     #   解冻阶段训练参数
     #   此时模型的主干不被冻结了，特征提取网络会发生改变
     #   占用的显存较大，网络所有的参数都会发生改变
-    #----------------------------------------------------#
+    #   UnFreeze_Epoch          模型总共训练的epoch
+    #   Unfreeze_batch_size     模型在解冻后的batch_size
+    #------------------------------------------------------------------#
     UnFreeze_Epoch      = 100
     Unfreeze_batch_size = 2
-    Unfreeze_lr         = 1e-5
+    #------------------------------------------------------------------#
+    #   Freeze_Train    是否进行冻结训练
+    #                   默认先冻结主干训练后解冻训练。
+    #                   如果设置Freeze_Train=False，建议使用优化器为sgd
+    #------------------------------------------------------------------#
+    Freeze_Train        = True
+
+    #------------------------------------------------------------------#
+    #   其它训练参数：学习率、优化器、学习率下降有关
+    #------------------------------------------------------------------#
+    #------------------------------------------------------------------#
+    #   Init_lr         模型的最大学习率
+    #                   当使用Adam优化器时建议设置  Init_lr=1e-3
+    #                   当使用SGD优化器时建议设置   Init_lr=1e-2
+    #   Min_lr          模型的最小学习率，默认为最大学习率的0.01
+    #------------------------------------------------------------------#
+    Init_lr             = 1e-2
+    Min_lr              = Init_lr * 0.01
+    #------------------------------------------------------------------#
+    #   optimizer_type  使用到的优化器种类，可选的有adam、sgd
+    #                   当使用Adam优化器时建议设置  Init_lr=1e-3
+    #                   当使用SGD优化器时建议设置   Init_lr=1e-2
+    #   momentum        优化器内部使用到的momentum参数
+    #   weight_decay    权值衰减，可防止过拟合
+    #------------------------------------------------------------------#
+    optimizer_type      = "sgd"
+    momentum            = 0.937
+    weight_decay        = 5e-4
+    #------------------------------------------------------------------#
+    #   lr_decay_type   使用到的学习率下降方式，可选的有'step'、'cos'
+    #------------------------------------------------------------------#
+    lr_decay_type       = 'cos'
+    #------------------------------------------------------------------#
+    #   save_period     多少个epoch保存一次权值，默认每个世代都保存
+    #------------------------------------------------------------------#
+    save_period         = 1
+    #------------------------------------------------------------------#
+    #   save_dir        权值与日志文件保存的文件夹
+    #------------------------------------------------------------------#
+    save_dir            = 'logs'
+    
     #------------------------------#
     #   数据集路径
     #------------------------------#
     VOCdevkit_path  = 'VOCdevkit'
-    #---------------------------------------------------------------------# 
+    #------------------------------------------------------------------#
     #   建议选项：
     #   种类少（几类）时，设置为True
     #   种类多（十几类）时，如果batch_size比较大（10以上），那么设置为True
     #   种类多（十几类）时，如果batch_size比较小（10以下），那么设置为False
-    #---------------------------------------------------------------------# 
+    #------------------------------------------------------------------#
     dice_loss       = False
-    #---------------------------------------------------------------------# 
+    #------------------------------------------------------------------#
     #   是否使用focal loss来防止正负样本不平衡
-    #---------------------------------------------------------------------# 
+    #------------------------------------------------------------------#
     focal_loss      = False
-    #---------------------------------------------------------------------# 
+    #------------------------------------------------------------------#
     #   是否给不同种类赋予不同的损失权值，默认是平衡的。
     #   设置的话，注意设置成numpy形式的，长度和num_classes一样。
     #   如：
     #   num_classes = 3
     #   cls_weights = np.array([1, 2, 3], np.float32)
-    #---------------------------------------------------------------------# 
+    #------------------------------------------------------------------#
     cls_weights     = np.ones([num_classes], np.float32)
-    #------------------------------------------------------#
-    #   是否进行冻结训练，默认先冻结主干训练后解冻训练。
-    #------------------------------------------------------#
-    Freeze_Train    = True
-    #------------------------------------------------------#
-    #   用于设置是否使用多线程读取数据
-    #   开启后会加快数据读取速度，但是会占用更多内存
-    #   内存较小的电脑可以设置为2或者0  
-    #------------------------------------------------------#
-    num_workers     = 4
+    #------------------------------------------------------------------#
+    #   num_workers     用于设置是否使用多线程读取数据，1代表关闭多线程
+    #                   开启后会加快数据读取速度，但是会占用更多内存
+    #                   keras里开启多线程有些时候速度反而慢了许多
+    #                   在IO为瓶颈的时候再开启多线程，即GPU运算速度远大于读取图片的速度。
+    #------------------------------------------------------------------#
+    num_workers         = 4
 
     model = Unet(num_classes=num_classes, pretrained=pretrained, backbone=backbone).train()
     if not pretrained:
@@ -154,22 +215,23 @@ if __name__ == "__main__":
         model_dict.update(pretrained_dict)
         model.load_state_dict(model_dict)
 
+    loss_history = LossHistory(save_dir, model, input_shape=input_shape)
+    
     model_train = model.train()
     if Cuda:
         model_train = torch.nn.DataParallel(model)
         cudnn.benchmark = True
         model_train = model_train.cuda()
-
-    loss_history = LossHistory("logs/")
     
     #---------------------------#
     #   读取数据集对应的txt
     #---------------------------#
     with open(os.path.join(VOCdevkit_path, "VOC2007/ImageSets/Segmentation/train.txt"),"r") as f:
         train_lines = f.readlines()
-
     with open(os.path.join(VOCdevkit_path, "VOC2007/ImageSets/Segmentation/val.txt"),"r") as f:
         val_lines = f.readlines()
+    num_train   = len(train_lines)
+    num_val     = len(val_lines)
         
     #------------------------------------------------------#
     #   主干特征提取网络特征通用，冻结训练可以加快训练速度
@@ -180,52 +242,46 @@ if __name__ == "__main__":
     #   提示OOM或者显存不足请调小Batch_size
     #------------------------------------------------------#
     if True:
-        batch_size  = Freeze_batch_size
-        lr          = Freeze_lr
-        start_epoch = Init_Epoch
-        end_epoch   = Freeze_Epoch
-
-        epoch_step      = len(train_lines) // batch_size
-        epoch_step_val  = len(val_lines) // batch_size
-        
-        if epoch_step == 0 or epoch_step_val == 0:
-            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
-
-        optimizer       = optim.Adam(model_train.parameters(), lr)
-        lr_scheduler    = optim.lr_scheduler.StepLR(optimizer, step_size = 1, gamma = 0.96)
-
-        train_dataset   = UnetDataset(train_lines, input_shape, num_classes, True, VOCdevkit_path)
-        val_dataset     = UnetDataset(val_lines, input_shape, num_classes, False, VOCdevkit_path)
-        gen             = DataLoader(train_dataset, shuffle = True, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
-                                    drop_last = True, collate_fn = unet_dataset_collate)
-        gen_val         = DataLoader(val_dataset  , shuffle = True, batch_size = batch_size, num_workers = num_workers, pin_memory=True, 
-                                    drop_last = True, collate_fn = unet_dataset_collate)
-
+        UnFreeze_flag = False
         #------------------------------------#
         #   冻结一定部分训练
         #------------------------------------#
         if Freeze_Train:
             model.freeze_backbone()
+            
+        #-------------------------------------------------------------------#
+        #   如果不冻结训练的话，直接设置batch_size为Unfreeze_batch_size
+        #-------------------------------------------------------------------#
+        batch_size = Freeze_batch_size if Freeze_Train else Unfreeze_batch_size
 
-        for epoch in range(start_epoch, end_epoch):
-            fit_one_epoch(model_train, model, loss_history, optimizer, epoch, 
-                    epoch_step, epoch_step_val, gen, gen_val, end_epoch, Cuda, dice_loss, focal_loss, cls_weights, num_classes)
-            lr_scheduler.step()
+        #-------------------------------------------------------------------#
+        #   判断当前batch_size与64的差别，自适应调整学习率
+        #-------------------------------------------------------------------#
+        nbs         = 64
+        Init_lr_fit = max(batch_size / nbs * Init_lr, 1e-4)
+        Min_lr_fit  = max(batch_size / nbs * Min_lr, 1e-6)
 
-    if True:
-        batch_size  = Unfreeze_batch_size
-        lr          = Unfreeze_lr
-        start_epoch = Freeze_Epoch
-        end_epoch   = UnFreeze_Epoch
+        #---------------------------------------#
+        #   根据optimizer_type选择优化器
+        #---------------------------------------#
+        optimizer = {
+            'adam'  : optim.Adam(model.parameters(), Init_lr_fit, betas = (momentum, 0.999), weight_decay = weight_decay),
+            'sgd'   : optim.SGD(model.parameters(), Init_lr_fit, momentum = momentum, nesterov=True, weight_decay = weight_decay)
+        }[optimizer_type]
 
-        epoch_step      = len(train_lines) // batch_size
-        epoch_step_val  = len(val_lines) // batch_size
-
+        #---------------------------------------#
+        #   获得学习率下降的公式
+        #---------------------------------------#
+        lr_scheduler_func = get_lr_scheduler(lr_decay_type, Init_lr_fit, Min_lr_fit, UnFreeze_Epoch)
+        
+        #---------------------------------------#
+        #   判断每一个世代的长度
+        #---------------------------------------#
+        epoch_step      = num_train // batch_size
+        epoch_step_val  = num_val // batch_size
+        
         if epoch_step == 0 or epoch_step_val == 0:
-            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
-
-        optimizer       = optim.Adam(model_train.parameters(), lr)
-        lr_scheduler    = optim.lr_scheduler.StepLR(optimizer, step_size = 1, gamma = 0.96)
+            raise ValueError("数据集过小，无法继续进行训练，请扩充数据集。")
 
         train_dataset   = UnetDataset(train_lines, input_shape, num_classes, True, VOCdevkit_path)
         val_dataset     = UnetDataset(val_lines, input_shape, num_classes, False, VOCdevkit_path)
@@ -233,11 +289,47 @@ if __name__ == "__main__":
                                     drop_last = True, collate_fn = unet_dataset_collate)
         gen_val         = DataLoader(val_dataset  , shuffle = True, batch_size = batch_size, num_workers = num_workers, pin_memory=True, 
                                     drop_last = True, collate_fn = unet_dataset_collate)
-            
-        if Freeze_Train:
-            model.unfreeze_backbone()
 
-        for epoch in range(start_epoch,end_epoch):
+        #---------------------------------------#
+        #   开始模型训练
+        #---------------------------------------#
+        for epoch in range(Init_Epoch, UnFreeze_Epoch):
+            #---------------------------------------#
+            #   如果模型有冻结学习部分
+            #   则解冻，并设置参数
+            #---------------------------------------#
+            if epoch >= Freeze_Epoch and not UnFreeze_flag and Freeze_Train:
+                batch_size = Unfreeze_batch_size
+
+                #-------------------------------------------------------------------#
+                #   判断当前batch_size与64的差别，自适应调整学习率
+                #-------------------------------------------------------------------#
+                nbs         = 64
+                Init_lr_fit = max(batch_size / nbs * Init_lr, 1e-4)
+                Min_lr_fit  = max(batch_size / nbs * Min_lr, 1e-6)
+                #---------------------------------------#
+                #   获得学习率下降的公式
+                #---------------------------------------#
+                lr_scheduler_func = get_lr_scheduler(lr_decay_type, Init_lr_fit, Min_lr_fit, UnFreeze_Epoch)
+                    
+                model.unfreeze_backbone()
+                            
+                epoch_step      = num_train // batch_size
+                epoch_step_val  = num_val // batch_size
+
+                if epoch_step == 0 or epoch_step_val == 0:
+                    raise ValueError("数据集过小，无法继续进行训练，请扩充数据集。")
+
+                gen             = DataLoader(train_dataset, shuffle = True, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
+                                            drop_last = True, collate_fn = unet_dataset_collate)
+                gen_val         = DataLoader(val_dataset  , shuffle = True, batch_size = batch_size, num_workers = num_workers, pin_memory=True, 
+                                            drop_last = True, collate_fn = unet_dataset_collate)
+
+                UnFreeze_flag = True
+
+            set_optimizer_lr(optimizer, lr_scheduler_func, epoch)
+
             fit_one_epoch(model_train, model, loss_history, optimizer, epoch, 
-                    epoch_step, epoch_step_val, gen, gen_val, end_epoch, Cuda, dice_loss, focal_loss, cls_weights, num_classes)
-            lr_scheduler.step()
+                    epoch_step, epoch_step_val, gen, gen_val, UnFreeze_Epoch, Cuda, dice_loss, focal_loss, cls_weights, num_classes, save_period, save_dir)
+
+        loss_history.writer.close()

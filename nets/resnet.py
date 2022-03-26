@@ -3,6 +3,7 @@ import math
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 
+
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=dilation, groups=groups, bias=False, dilation=dilation)
