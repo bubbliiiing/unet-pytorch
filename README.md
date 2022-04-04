@@ -14,16 +14,16 @@
 
 ## Top News
 **`2022-03`**:**进行大幅度更新、支持step、cos学习率下降法、支持adam、sgd优化器选择、支持学习率根据batch_size自适应调整。**  
-BiliBili视频中的原仓库地址为：https://github.com/bubbliiiing/unet-tf2/tree/bilibili
+BiliBili视频中的原仓库地址为：https://github.com/bubbliiiing/unet-pytorch/tree/bilibili
 
 **`2020-08`**:**创建仓库、支持多backbone、支持数据miou评估、标注数据处理、大量注释等。**  
 
 ## 相关仓库
 | 模型 | 路径 |
 | :----- | :----- |
-Unet | https://github.com/bubbliiiing/unet-tf2  
-PSPnet | https://github.com/bubbliiiing/pspnet-tf2
-deeplabv3+ | https://github.com/bubbliiiing/deeplabv3-plus-tf2
+Unet | https://github.com/bubbliiiing/unet-pytorch  
+PSPnet | https://github.com/bubbliiiing/pspnet-pytorch
+deeplabv3+ | https://github.com/bubbliiiing/deeplabv3-plus-pytorch
 
 ### 性能情况
 **unet并不适合VOC此类数据集，其更适合特征少，需要浅层特征的医药数据集之类的。**
