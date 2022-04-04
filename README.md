@@ -2,14 +2,28 @@
 ---
 
 ### 目录
-1. [性能情况 Performance](#性能情况)
-2. [所需环境 Environment](#所需环境)
-3. [注意事项 Attention](#注意事项)
-4. [文件下载 Download](#文件下载)
-5. [训练步骤 How2train](#训练步骤)
-6. [预测步骤 How2predict](#预测步骤)
-7. [评估步骤 miou](#评估步骤)
-8. [参考资料 Reference](#Reference)
+1. [仓库更新 Top News](#仓库更新)
+2. [相关仓库 Related code](#相关仓库)
+3. [性能情况 Performance](#性能情况)
+4. [所需环境 Environment](#所需环境)
+5. [文件下载 Download](#文件下载)
+6. [训练步骤 How2train](#训练步骤)
+7. [预测步骤 How2predict](#预测步骤)
+8. [评估步骤 miou](#评估步骤)
+9. [参考资料 Reference](#Reference)
+
+## Top News
+**`2022-03`**:**进行大幅度更新、支持step、cos学习率下降法、支持adam、sgd优化器选择、支持学习率根据batch_size自适应调整。**  
+BiliBili视频中的原仓库地址为：https://github.com/bubbliiiing/unet-tf2/tree/bilibili
+
+**`2020-08`**:**创建仓库、支持多backbone、支持数据miou评估、标注数据处理、大量注释等。**  
+
+## 相关仓库
+| 模型 | 路径 |
+| :----- | :----- |
+Unet | https://github.com/bubbliiiing/unet-tf2  
+PSPnet | https://github.com/bubbliiiing/pspnet-tf2
+deeplabv3+ | https://github.com/bubbliiiing/deeplabv3-plus-tf2
 
 ### 性能情况
 **unet并不适合VOC此类数据集，其更适合特征少，需要浅层特征的医药数据集之类的。**
@@ -21,11 +35,6 @@
 ### 所需环境
 torch==1.2.0    
 torchvision==0.4.0   
-
-### 注意事项
-unet_vgg_voc.pth是基于VOC拓展数据集训练的。  
-unet_vgg_medical.pth是使用示例的细胞分割数据集训练的。  
-在使用时需要注意区分。  
 
 ### 文件下载
 训练所需的权值可在百度网盘中下载。    
