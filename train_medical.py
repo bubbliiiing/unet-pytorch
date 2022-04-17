@@ -53,10 +53,10 @@ if __name__ == "__main__":
     #                   Windows系统下默认使用DP模式调用所有显卡，不支持DDP。
     #   DP模式：
     #       设置            distributed = False
-    #       在终端中输入    CUDA_VISIBLE_DEVICES=0,1 python train.py
+    #       在终端中输入    CUDA_VISIBLE_DEVICES=0,1 python train_medical.py
     #   DDP模式：
     #       设置            distributed = True
-    #       在终端中输入    CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 train.py
+    #       在终端中输入    CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 train_medical.py
     #---------------------------------------------------------------------#
     distributed     = False
     #---------------------------------------------------------------------#
