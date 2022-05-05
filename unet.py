@@ -98,7 +98,7 @@ class Unet(object):
     #---------------------------------------------------#
     #   检测图片
     #---------------------------------------------------#
-    def detect_image(self, image):
+    def detect_image(self, image, count=False, name_classes=None):
         #---------------------------------------------------------#
         #   在这里将图像转换成RGB图像，防止灰度图在预测时报错。
         #   代码仅仅支持RGB图像的预测，所有其它类型的图像都会转化成RGB
@@ -146,6 +146,24 @@ class Unet(object):
             #   取出每一个像素点的种类
             #---------------------------------------------------#
             pr = pr.argmax(axis=-1)
+        
+        #---------------------------------------------------------#
+        #   计数
+        #---------------------------------------------------------#
+        if count:
+            classes_nums        = np.zeros([self.num_classes])
+            total_points_num    = orininal_h * orininal_w
+            print('-' * 63)
+            print("|%25s | %15s | %15s|"%("Key", "Value", "Ratio"))
+            print('-' * 63)
+            for i in range(self.num_classes):
+                num     = np.sum(pr == i)
+                ratio   = num / total_points_num * 100
+                if num > 0:
+                    print("|%25s | %15s | %14.2f%%|"%(str(name_classes[i]), str(num), ratio))
+                    print('-' * 63)
+                classes_nums[i] = num
+            print("classes_nums:", classes_nums)
 
         if self.mix_type == 0:
             # seg_img = np.zeros((np.shape(pr)[0], np.shape(pr)[1], 3))

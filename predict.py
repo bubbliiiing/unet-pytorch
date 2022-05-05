@@ -24,6 +24,15 @@ if __name__ == "__main__":
     #   'export_onnx'       表示将模型导出为onnx，需要pytorch1.7.1以上。
     #----------------------------------------------------------------------------------------------------------#
     mode = "predict"
+    #-------------------------------------------------------------------------#
+    #   count               指定了是否进行目标的像素点计数（即面积）与比例计算
+    #   name_classes        区分的种类，和json_to_dataset里面的一样，用于打印种类和数量
+    #
+    #   count、name_classes仅在mode='predict'时有效
+    #-------------------------------------------------------------------------#
+    count           = False
+    name_classes    = ["background","aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
+    # name_classes    = ["background","cat","dog"]
     #----------------------------------------------------------------------------------------------------------#
     #   video_path          用于指定视频的路径，当video_path=0时表示检测摄像头
     #                       想要检测视频，则设置如video_path = "xxx.mp4"即可，代表读取出根目录下的xxx.mp4文件。
@@ -82,7 +91,7 @@ if __name__ == "__main__":
                 print('Open Error! Try again!')
                 continue
             else:
-                r_image = unet.detect_image(image)
+                r_image = unet.detect_image(image, count=count, name_classes=name_classes)
                 r_image.show()
 
     elif mode == "video":
