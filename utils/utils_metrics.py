@@ -54,7 +54,7 @@ def per_class_Precision(hist):
 def per_Accuracy(hist):
     return np.sum(np.diag(hist)) / np.maximum(np.sum(hist), 1) 
 
-def compute_mIoU(gt_dir, pred_dir, png_name_list, num_classes, name_classes):  
+def compute_mIoU(gt_dir, pred_dir, png_name_list, num_classes, name_classes=None):  
     print('Num classes', num_classes)  
     #-----------------------------------------#
     #   创建一个全是0的矩阵，是一个混淆矩阵
@@ -92,9 +92,9 @@ def compute_mIoU(gt_dir, pred_dir, png_name_list, num_classes, name_classes):
         #------------------------------------------------#
         #   对一张图片计算21×21的hist矩阵，并累加
         #------------------------------------------------#
-        hist += fast_hist(label.flatten(), pred.flatten(),num_classes)  
+        hist += fast_hist(label.flatten(), pred.flatten(), num_classes)  
         # 每计算10张就输出一下目前已计算的图片中所有类别平均的mIoU值
-        if ind > 0 and ind % 10 == 0:  
+        if name_classes is not None and ind > 0 and ind % 10 == 0: 
             print('{:d} / {:d}: mIou-{:0.2f}%; mPA-{:0.2f}%; Accuracy-{:0.2f}%'.format(
                     ind, 
                     len(gt_imgs),
@@ -112,9 +112,10 @@ def compute_mIoU(gt_dir, pred_dir, png_name_list, num_classes, name_classes):
     #------------------------------------------------#
     #   逐类别输出一下mIoU值
     #------------------------------------------------#
-    for ind_class in range(num_classes):
-        print('===>' + name_classes[ind_class] + ':\tIou-' + str(round(IoUs[ind_class] * 100, 2)) \
-            + '; Recall (equal to the PA)-' + str(round(PA_Recall[ind_class] * 100, 2))+ '; Precision-' + str(round(Precision[ind_class] * 100, 2)))
+    if name_classes is not None:
+        for ind_class in range(num_classes):
+            print('===>' + name_classes[ind_class] + ':\tIou-' + str(round(IoUs[ind_class] * 100, 2)) \
+                + '; Recall (equal to the PA)-' + str(round(PA_Recall[ind_class] * 100, 2))+ '; Precision-' + str(round(Precision[ind_class] * 100, 2)))
 
     #-----------------------------------------------------------------#
     #   在所有验证集图像上求所有类别平均的mIoU值，计算时忽略NaN值

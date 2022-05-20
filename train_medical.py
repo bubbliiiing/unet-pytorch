@@ -1,4 +1,5 @@
 import os
+import datetime
 
 import numpy as np
 import torch
@@ -294,7 +295,9 @@ if __name__ == "__main__":
     #   记录Loss
     #----------------------#
     if local_rank == 0:
-        loss_history = LossHistory(save_dir, model, input_shape=input_shape, val_loss_flag = False)
+        time_str        = datetime.datetime.strftime(datetime.datetime.now(),'%Y_%m_%d_%H_%M_%S')
+        log_dir         = os.path.join(save_dir, "loss_" + str(time_str))
+        loss_history = LossHistory(log_dir, model, input_shape=input_shape, val_loss_flag = False)
     else:
         loss_history = None
 
@@ -452,6 +455,9 @@ if __name__ == "__main__":
             set_optimizer_lr(optimizer, lr_scheduler_func, epoch)
 
             fit_one_epoch_no_val(model_train, model, loss_history, optimizer, epoch, epoch_step, gen, UnFreeze_Epoch, Cuda, dice_loss, focal_loss, cls_weights, num_classes, fp16, scaler, save_period, save_dir, local_rank)
-            
+
+            if distributed:
+                dist.barrier()
+
         if local_rank == 0:
             loss_history.writer.close()
