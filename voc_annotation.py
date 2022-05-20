@@ -92,3 +92,7 @@ if __name__ == "__main__":
         print("二分类问题需要将标签修改为背景的像素点值为0，目标的像素点值为1。")
     elif classes_nums[0] > 0 and np.sum(classes_nums[1:]) == 0:
         print("检测到标签中仅仅包含背景像素点，数据格式有误，请仔细检查数据集格式。")
+
+    print("JPEGImages中的图片应当为.jpg文件、SegmentationClass中的图片应当为.png文件。")
+    print("如果格式有误，参考:")
+    print("https://github.com/bubbliiiing/segmentation-format-fix")
