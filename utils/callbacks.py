@@ -104,7 +104,7 @@ class EvalCallback():
         self.eval_flag          = eval_flag
         self.period             = period
         
-        self.image_ids          = [image_id.split()[0] for image_id in image_ids]
+        self.image_ids          = [image_id.split('\n')[0] for image_id in image_ids]
         self.mious      = [0]
         self.epoches    = [0]
         if self.eval_flag:
