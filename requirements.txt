@@ -7,5 +7,4 @@ torchvision
 tqdm
 Pillow
 h5py
-labelme
 
