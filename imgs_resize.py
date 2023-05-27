@@ -28,6 +28,10 @@ if __name__ == '__main__':
             top = 430
             right = 645 + 1024
             bottom = 430 + 1024
+            #left = math.floor(width/2) - 512
+            #right = math.floor(width/2) + 512
+            #top = math.floor(height/2) - 512
+            #bottom = math.floor(height/2) + 512
             try:
                 im = Image.open(os.path.join(config['input_path'], img))
                 width, height = im.size
