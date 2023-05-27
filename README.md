@@ -51,12 +51,13 @@ VOC拓展数据集的百度网盘如下：
 2、运行train.py进行训练，默认参数已经对应voc数据集所需要的参数了。  
 
 #### 二、训练自己的数据集
-1、本文使用VOC格式进行训练。  
-2、训练前将标签文件放在VOCdevkit文件夹下的VOC2007文件夹下的SegmentationClass中。    
-3、训练前将图片文件放在VOCdevkit文件夹下的VOC2007文件夹下的JPEGImages中。    
-4、在训练前利用voc_annotation.py文件生成对应的txt。    
-5、注意修改train.py的num_classes为分类个数+1。    
-6、运行train.py即可开始训练。  
+1、本文使用VOC格式进行训练。 
+2、如果需要修改图片尺寸请使用imgs_resize.py文件进行修改。
+3、训练前将标签文件放在VOCdevkit文件夹下的VOC2007文件夹下的SegmentationClass中。    
+4、训练前将图片文件放在VOCdevkit文件夹下的VOC2007文件夹下的JPEGImages中。    
+5、在训练前利用voc_annotation.py文件生成对应的txt。    
+6、注意修改train.py的num_classes为分类个数+1。    
+7、运行train.py即可开始训练。  
 
 #### 三、训练医药数据集
 1、下载VGG的预训练权重到model_data下面。  
