@@ -98,7 +98,14 @@ if __name__ == "__main__":
                 continue
             else:
                 r_image = unet.detect_image(image, count=count, name_classes=name_classes)
-                r_image.show()
+                #r_image.show()
+                plt.figure(figsize=(24.48, 20.48))  # 设置窗口大小
+                plt.suptitle('predict result')  # 图片名称
+                plt.subplot(1, 2, 1), plt.title('source')
+                plt.imshow(image), plt.axis('off')
+                plt.subplot(1, 2, 2), plt.title('result')
+                plt.imshow(r_image), plt.axis('off')
+                plt.show()
 
     elif mode == "video":
         capture=cv2.VideoCapture(video_path)
