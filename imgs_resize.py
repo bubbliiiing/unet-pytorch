@@ -31,7 +31,7 @@ if __name__ == '__main__':
             try:
                 im = Image.open(os.path.join(config['input_path'], img))
                 width, height = im.size
-                im1 = im.crop([645, 430, 645+1024, 430+1024])
+                im1 = im.crop([left, top, right, bottom])
                 cut_name = os.path.join(config['output_path'], img)
                 im1.save(cut_name)
             except RuntimeError as e:
