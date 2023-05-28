@@ -31,8 +31,9 @@ if __name__ == "__main__":
     #   count、name_classes仅在mode='predict'时有效
     #-------------------------------------------------------------------------#
     count           = False
-    name_classes    = ["background","aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
+    # name_classes    = ["background","aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
     # name_classes    = ["background","cat","dog"]
+    name_classes     = ["_background_","quesun","youwu","huahen","maocao"]
     #----------------------------------------------------------------------------------------------------------#
     #   video_path          用于指定视频的路径，当video_path=0时表示检测摄像头
     #                       想要检测视频，则设置如video_path = "xxx.mp4"即可，代表读取出根目录下的xxx.mp4文件。
@@ -90,6 +91,7 @@ if __name__ == "__main__":
         '''
         while True:
             img = input('Input image filename:')
+            img_name = img.split("/")[-1]
             try:
                 image = Image.open(img)
             except:
@@ -97,7 +99,14 @@ if __name__ == "__main__":
                 continue
             else:
                 r_image = unet.detect_image(image, count=count, name_classes=name_classes)
-                r_image.show()
+                #r_image.show()
+                plt.figure(figsize=(24.48, 20.48))  # 设置窗口大小
+                plt.suptitle('predict result')  # 图片名称
+                plt.subplot(1, 2, 1), plt.title('Source: ' + img_name)
+                plt.imshow(image), plt.axis('off')
+                plt.subplot(1, 2, 2), plt.title('Result: ' + img_name)
+                plt.imshow(r_image), plt.axis('off')
+                plt.show()
 
     elif mode == "video":
         capture=cv2.VideoCapture(video_path)

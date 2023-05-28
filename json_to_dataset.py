@@ -19,9 +19,9 @@ from labelme import utils
 if __name__ == '__main__':
     jpgs_path   = "datasets/JPEGImages"
     pngs_path   = "datasets/SegmentationClass"
-    classes     = ["_background_","aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
+    # classes     = ["_background_","aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
     # classes     = ["_background_","cat","dog"]
-    
+    classes     = ["_background_","quesun","youwu","huahen","maocao"] 
     count = os.listdir("./datasets/before/") 
     for i in range(0, len(count)):
         path = os.path.join("./datasets/before", count[i])

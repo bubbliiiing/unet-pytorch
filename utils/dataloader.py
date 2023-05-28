@@ -24,7 +24,7 @@ class UnetDataset(Dataset):
 
     def __getitem__(self, index):
         annotation_line = self.annotation_lines[index]
-        name            = annotation_line.split()[0]
+        name            = annotation_line.split("\n")[0]
 
         #-------------------------------#
         #   从文件中读取图像

@@ -66,7 +66,7 @@ if __name__ == "__main__":
     #   num_classes     训练自己的数据集必须要修改的
     #                   自己需要的分类个数+1，如2+1
     #-----------------------------------------------------#
-    num_classes = 21
+    num_classes = 5
     #-----------------------------------------------------#
     #   主干网络选择
     #   vgg
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     #-----------------------------------------------------#
     #   input_shape     输入图片的大小，32的倍数
     #-----------------------------------------------------#
-    input_shape = [512, 512]
+    input_shape = [1024, 1024]
     
     #----------------------------------------------------------------------------------------------------------------------------#
     #   训练分为两个阶段，分别是冻结阶段和解冻阶段。设置冻结阶段是为了满足机器性能不足的同学的训练需求。
@@ -219,7 +219,7 @@ if __name__ == "__main__":
     #   种类多（十几类）时，如果batch_size比较大（10以上），那么设置为True
     #   种类多（十几类）时，如果batch_size比较小（10以下），那么设置为False
     #------------------------------------------------------------------#
-    dice_loss       = False
+    dice_loss       = True
     #------------------------------------------------------------------#
     #   是否使用focal loss来防止正负样本不平衡
     #------------------------------------------------------------------#
@@ -238,7 +238,7 @@ if __name__ == "__main__":
     #                   keras里开启多线程有些时候速度反而慢了许多
     #                   在IO为瓶颈的时候再开启多线程，即GPU运算速度远大于读取图片的速度。
     #------------------------------------------------------------------#
-    num_workers     = 4
+    num_workers     = 0
 
     #------------------------------------------------------#
     #   设置用到的显卡
@@ -471,9 +471,9 @@ if __name__ == "__main__":
                 if distributed:
                     batch_size = batch_size // ngpus_per_node
 
-                gen             = DataLoader(train_dataset, shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
+                gen             = DataLoader(train_dataset, shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=False,
                                             drop_last = True, collate_fn = unet_dataset_collate, sampler=train_sampler)
-                gen_val         = DataLoader(val_dataset  , shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True, 
+                gen_val         = DataLoader(val_dataset  , shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=False, 
                                             drop_last = True, collate_fn = unet_dataset_collate, sampler=val_sampler)
 
                 UnFreeze_flag = True
