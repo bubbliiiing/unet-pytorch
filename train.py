@@ -1,5 +1,6 @@
-import os
 import datetime
+import os
+from functools import partial
 
 import numpy as np
 import torch
@@ -10,9 +11,10 @@ from torch.utils.data import DataLoader
 
 from nets.unet import Unet
 from nets.unet_training import get_lr_scheduler, set_optimizer_lr, weights_init
-from utils.callbacks import LossHistory, EvalCallback
+from utils.callbacks import EvalCallback, LossHistory
 from utils.dataloader import UnetDataset, unet_dataset_collate
-from utils.utils import download_weights, show_config
+from utils.utils import (download_weights, seed_everything, show_config,
+                         worker_init_fn)
 from utils.utils_fit import fit_one_epoch
 
 '''
@@ -41,6 +43,11 @@ if __name__ == "__main__":
     #           没有GPU可以设置成False
     #---------------------------------#
     Cuda = True
+    #----------------------------------------------#
+    #   Seed    用于固定随机种子
+    #           使得每次独立训练都可以获得一样的结果
+    #----------------------------------------------#
+    seed            = 11
     #---------------------------------------------------------------------#
     #   distributed     用于指定是否使用单机多卡分布式运行
     #                   终端指令仅支持Ubuntu。CUDA_VISIBLE_DEVICES用于在Ubuntu下指定显卡。
@@ -240,6 +247,7 @@ if __name__ == "__main__":
     #------------------------------------------------------------------#
     num_workers     = 4
 
+    seed_everything(seed)
     #------------------------------------------------------#
     #   设置用到的显卡
     #------------------------------------------------------#
@@ -255,6 +263,7 @@ if __name__ == "__main__":
     else:
         device          = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         local_rank      = 0
+        rank            = 0
 
     #----------------------------------------------------#
     #   下载预训练权重
@@ -423,9 +432,11 @@ if __name__ == "__main__":
             shuffle         = True
 
         gen             = DataLoader(train_dataset, shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
-                                    drop_last = True, collate_fn = unet_dataset_collate, sampler=train_sampler)
+                                    drop_last = True, collate_fn = unet_dataset_collate, sampler=train_sampler, 
+                                    worker_init_fn=partial(worker_init_fn, rank=rank, seed=seed))
         gen_val         = DataLoader(val_dataset  , shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True, 
-                                    drop_last = True, collate_fn = unet_dataset_collate, sampler=val_sampler)
+                                    drop_last = True, collate_fn = unet_dataset_collate, sampler=val_sampler, 
+                                    worker_init_fn=partial(worker_init_fn, rank=rank, seed=seed))
         
         #----------------------#
         #   记录eval的map曲线
@@ -472,9 +483,11 @@ if __name__ == "__main__":
                     batch_size = batch_size // ngpus_per_node
 
                 gen             = DataLoader(train_dataset, shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
-                                            drop_last = True, collate_fn = unet_dataset_collate, sampler=train_sampler)
+                                            drop_last = True, collate_fn = unet_dataset_collate, sampler=train_sampler, 
+                                            worker_init_fn=partial(worker_init_fn, rank=rank, seed=seed))
                 gen_val         = DataLoader(val_dataset  , shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True, 
-                                            drop_last = True, collate_fn = unet_dataset_collate, sampler=val_sampler)
+                                            drop_last = True, collate_fn = unet_dataset_collate, sampler=val_sampler, 
+                                            worker_init_fn=partial(worker_init_fn, rank=rank, seed=seed))
 
                 UnFreeze_flag = True
 
